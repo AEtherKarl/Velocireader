@@ -1,0 +1,2097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Velocireader — RSVP Reader</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&family=Playfair+Display:wght@400;500;600&family=Space+Mono:wght@400;700&family=Lora:ital,wght@0,400;0,500;1,400&family=Merriweather:wght@300;400;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #faf9f7;
+            --bg-secondary: #f0eeeb;
+            --bg-tertiary: #e8e6e1;
+            --text-primary: #1a1a1a;
+            --text-secondary: #4a4a4a;
+            --text-muted: #8a8a8a;
+            --accent: #c9553d;
+            --accent-hover: #b34830;
+            --accent-subtle: rgba(201, 85, 61, 0.1);
+            --border: #d4d2cd;
+            --radius-sm: 6px;
+            --radius-md: 12px;
+            --radius-lg: 20px;
+            --font-reading: 'Crimson Pro', Georgia, serif;
+            --font-ui: 'DM Sans', system-ui, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* Dark Theme */
+        [data-theme="dark"] {
+            --bg-primary: #141414;
+            --bg-secondary: #1e1e1e;
+            --bg-tertiary: #282828;
+            --text-primary: #f0eeeb;
+            --text-secondary: #b8b5af;
+            --text-muted: #6a6a6a;
+            --accent: #e07a5f;
+            --accent-hover: #e8947d;
+            --accent-subtle: rgba(224, 122, 95, 0.12);
+            --border: #333;
+        }
+        
+        /* Literary Fiction Theme */
+        [data-theme="literary"] {
+            --bg-primary: #f5f1e8;
+            --bg-secondary: #ebe4d6;
+            --bg-tertiary: #ddd4c2;
+            --text-primary: #2c2416;
+            --text-secondary: #5a4d3a;
+            --text-muted: #8b7d68;
+            --accent: #8b4513;
+            --accent-hover: #6b3410;
+            --accent-subtle: rgba(139, 69, 19, 0.12);
+            --border: #c9bda8;
+            --font-reading: 'Lora', Georgia, serif;
+        }
+        
+        /* Sci-Fi Theme */
+        [data-theme="scifi"] {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #111827;
+            --bg-tertiary: #1e293b;
+            --text-primary: #e0f2fe;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent: #06b6d4;
+            --accent-hover: #22d3ee;
+            --accent-subtle: rgba(6, 182, 212, 0.15);
+            --border: #334155;
+            --font-reading: 'Space Mono', monospace;
+        }
+        
+        /* Fantasy Theme */
+        [data-theme="fantasy"] {
+            --bg-primary: #1a1520;
+            --bg-secondary: #251e2c;
+            --bg-tertiary: #352a40;
+            --text-primary: #f5e6d3;
+            --text-secondary: #c9b896;
+            --text-muted: #8b7355;
+            --accent: #d4a574;
+            --accent-hover: #e8c49a;
+            --accent-subtle: rgba(212, 165, 116, 0.15);
+            --border: #4a3f5a;
+            --font-reading: 'Playfair Display', serif;
+        }
+        
+        /* Romance Theme */
+        [data-theme="romance"] {
+            --bg-primary: #fdf2f4;
+            --bg-secondary: #fce7eb;
+            --bg-tertiary: #fbdce2;
+            --text-primary: #4a1c2a;
+            --text-secondary: #7c3a4d;
+            --text-muted: #a06578;
+            --accent: #be185d;
+            --accent-hover: #db2777;
+            --accent-subtle: rgba(190, 24, 93, 0.1);
+            --border: #f5c6d0;
+            --font-reading: 'Lora', Georgia, serif;
+        }
+        
+        /* Thriller Theme */
+        [data-theme="thriller"] {
+            --bg-primary: #18181b;
+            --bg-secondary: #27272a;
+            --bg-tertiary: #3f3f46;
+            --text-primary: #fafafa;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            --accent: #dc2626;
+            --accent-hover: #ef4444;
+            --accent-subtle: rgba(220, 38, 38, 0.15);
+            --border: #52525b;
+            --font-reading: 'Merriweather', serif;
+        }
+        
+        /* Non-Fiction Theme */
+        [data-theme="nonfiction"] {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --bg-tertiary: #f1f5f9;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --accent: #0369a1;
+            --accent-hover: #0284c7;
+            --accent-subtle: rgba(3, 105, 161, 0.08);
+            --border: #e2e8f0;
+            --font-reading: 'Merriweather', Georgia, serif;
+        }
+        
+        /* Sepia/Classic Theme */
+        [data-theme="sepia"] {
+            --bg-primary: #f4ecd8;
+            --bg-secondary: #e8dcc4;
+            --bg-tertiary: #d9c9a8;
+            --text-primary: #3d3226;
+            --text-secondary: #5c4d3c;
+            --text-muted: #8b7d6b;
+            --accent: #8b6914;
+            --accent-hover: #a57d1a;
+            --accent-subtle: rgba(139, 105, 20, 0.15);
+            --border: #c9b896;
+            --font-reading: 'Crimson Pro', Georgia, serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { font-size: 16px; }
+        body {
+            font-family: var(--font-ui);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            transition: background var(--transition), color var(--transition);
+        }
+        
+        /* Focus Mode - Applied to specific elements */
+        .focus-active .header,
+        .focus-active .book-info,
+        .focus-active .chapter-timeline,
+        .focus-active .controls,
+        .focus-active .progress-container {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+        }
+        
+        .focus-active.focus-reveal .header,
+        .focus-active.focus-reveal .book-info,
+        .focus-active.focus-reveal .chapter-timeline,
+        .focus-active.focus-reveal .controls,
+        .focus-active.focus-reveal .progress-container {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        .header {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 100;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(to bottom, var(--bg-primary) 0%, var(--bg-primary) 70%, transparent 100%);
+        }
+        .logo { display: flex; align-items: center; gap: 0.75rem; }
+        .logo-icon {
+            width: 36px; height: 36px;
+            background: var(--accent);
+            border-radius: var(--radius-sm);
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: 600; font-size: 1.1rem;
+            font-family: var(--font-reading);
+        }
+        .logo-text { font-size: 1.25rem; font-weight: 600; letter-spacing: -0.02em; }
+        .header-actions { display: flex; gap: 0.5rem; }
+        .icon-btn {
+            width: 40px; height: 40px;
+            border: none;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--text-secondary);
+            transition: all var(--transition);
+        }
+        .icon-btn:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+        .icon-btn svg { width: 20px; height: 20px; }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 6rem 2rem 4rem;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .upload-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 2rem;
+            animation: fadeIn 0.6s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .upload-section.hidden { display: none; }
+        .upload-header { text-align: center; max-width: 500px; }
+        .upload-header h1 {
+            font-family: var(--font-reading);
+            font-size: clamp(2.5rem, 6vw, 4rem);
+            font-weight: 500;
+            line-height: 1.1;
+            letter-spacing: -0.03em;
+            margin-bottom: 1rem;
+        }
+        .upload-header h1 span { color: var(--accent); }
+        .upload-header p { font-size: 1.1rem; color: var(--text-secondary); line-height: 1.6; }
+        .dropzone {
+            width: 100%;
+            max-width: 480px;
+            padding: 3rem 2rem;
+            border: 2px dashed var(--border);
+            border-radius: var(--radius-lg);
+            background: var(--bg-secondary);
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition);
+            position: relative;
+        }
+        .dropzone:hover, .dropzone.dragover { border-color: var(--accent); background: var(--accent-subtle); }
+        .dropzone-icon {
+            width: 64px; height: 64px;
+            margin: 0 auto 1.5rem;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            display: flex; align-items: center; justify-content: center;
+            transition: all var(--transition);
+        }
+        .dropzone:hover .dropzone-icon { background: var(--accent); transform: scale(1.05); }
+        .dropzone-icon svg { width: 28px; height: 28px; color: var(--text-muted); transition: all var(--transition); }
+        .dropzone:hover .dropzone-icon svg { color: white; }
+        .dropzone h3 { font-size: 1.1rem; font-weight: 500; margin-bottom: 0.5rem; }
+        .dropzone p { font-size: 0.9rem; color: var(--text-muted); }
+        .dropzone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: var(--font-ui);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); }
+        .btn-secondary { background: var(--bg-secondary); color: var(--text-secondary); border: 1px solid var(--border); }
+        .btn-secondary:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+        .btn svg { width: 18px; height: 18px; }
+        .features { display: flex; gap: 2rem; margin-top: 1rem; flex-wrap: wrap; justify-content: center; }
+        .feature { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: var(--text-muted); }
+        .feature svg { width: 16px; height: 16px; color: var(--accent); }
+        .reader-section { flex: 1; display: none; flex-direction: column; animation: fadeIn 0.6s ease-out; }
+        .reader-section.active { display: flex; }
+        .book-info {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.5rem;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            margin-bottom: 1rem;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .book-meta { display: flex; flex-direction: column; gap: 0.25rem; }
+        .book-title-text { font-weight: 600; font-size: 1rem; }
+        .book-stats { font-size: 0.85rem; color: var(--text-muted); font-family: var(--font-mono); }
+        .book-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .btn-small { padding: 0.5rem 1rem; font-size: 0.8rem; }
+
+        /* Timeline */
+        .chapter-timeline {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+        }
+        .timeline-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+        }
+        .timeline-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .timeline-title svg { width: 18px; height: 18px; color: var(--accent); }
+        .timeline-toggle { width: 20px; height: 20px; color: var(--text-muted); transition: transform var(--transition); }
+        .chapter-timeline.open .timeline-toggle { transform: rotate(180deg); }
+        .timeline-container {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        .chapter-timeline.open .timeline-container {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 1rem;
+        }
+        .timeline-track { position: relative; padding: 0.5rem 0; }
+        .timeline-line { position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: var(--border); }
+        .timeline-progress { position: absolute; left: 8px; top: 0; width: 2px; background: var(--accent); transition: height 0.3s ease; }
+        .timeline-item {
+            position: relative;
+            padding: 0.6rem 0.5rem 0.6rem 2rem;
+            cursor: pointer;
+            transition: all var(--transition);
+            border-radius: var(--radius-sm);
+            margin-bottom: 0.25rem;
+        }
+        .timeline-item:hover { background: var(--bg-tertiary); }
+        .timeline-item.active { background: var(--accent-subtle); }
+        .timeline-item.completed .timeline-dot { background: var(--accent); border-color: var(--accent); }
+        .timeline-item.active .timeline-dot { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-subtle); }
+        .timeline-dot {
+            position: absolute;
+            left: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: var(--bg-primary);
+            border: 2px solid var(--border);
+            transition: all var(--transition);
+            z-index: 1;
+        }
+        .timeline-content { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+        .timeline-chapter-title {
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+        }
+        .timeline-item.active .timeline-chapter-title { color: var(--accent); font-weight: 500; }
+        .timeline-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            flex-shrink: 0;
+        }
+        .timeline-duration { background: var(--bg-tertiary); padding: 0.15rem 0.4rem; border-radius: 3px; }
+
+        /* Word Display */
+        .word-display-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 280px;
+            padding: 3rem 2rem;
+        }
+        .word-display-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .orp-marker {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 14px;
+            background: var(--accent);
+            z-index: 10;
+            transition: opacity 0.2s;
+        }
+        .orp-marker::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 6px solid var(--accent);
+        }
+        .orp-marker.hidden { opacity: 0; }
+        
+        /* Single word display with ORP */
+        .word-display-single {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-reading);
+            font-size: clamp(2.5rem, 8vw, 5rem);
+            font-weight: 400;
+            min-height: 1.5em;
+            width: 100%;
+            margin-top: 24px;
+            white-space: nowrap;
+        }
+        .word-display-single.hidden { display: none; }
+        .word-part { display: inline-block; }
+        .word-before {
+            text-align: right;
+            color: var(--text-primary);
+            min-width: 45%;
+            max-width: 45%;
+            overflow: hidden;
+            direction: rtl;
+        }
+        .word-before-inner {
+            direction: ltr;
+            display: inline-block;
+        }
+        .word-orp {
+            color: var(--accent);
+            font-weight: 600;
+            display: inline-block;
+            text-align: center;
+            min-width: 0.55em;
+        }
+        .word-after {
+            text-align: left;
+            color: var(--text-primary);
+            min-width: 45%;
+            max-width: 45%;
+            overflow: hidden;
+        }
+        
+        /* Grouped word display */
+        .word-display-grouped {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-reading);
+            font-size: clamp(2.5rem, 8vw, 5rem);
+            font-weight: 400;
+            min-height: 1.5em;
+            width: 100%;
+            margin-top: 24px;
+            white-space: nowrap;
+            gap: 0.3em;
+        }
+        .word-display-grouped.visible { display: flex; }
+        .grouped-word { display: inline-block; }
+        
+        /* Bionic Reading */
+        .bionic-bold { font-weight: 700; }
+        .bionic-normal { font-weight: 400; }
+        
+        /* Context words on skip */
+        .context-words {
+            display: none;
+            font-family: var(--font-reading);
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            margin-top: 1.5rem;
+            text-align: center;
+            max-width: 600px;
+            line-height: 1.8;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .context-words.visible {
+            display: block;
+            opacity: 1;
+        }
+        .context-words .ctx-current {
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        .progress-container { width: 100%; max-width: 600px; margin-top: 2rem; }
+        .progress-bar { height: 4px; background: var(--bg-tertiary); border-radius: 2px; overflow: hidden; cursor: pointer; }
+        .progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.1s linear; width: 0%; }
+        .progress-info { display: flex; justify-content: space-between; margin-top: 0.75rem; font-size: 0.8rem; color: var(--text-muted); font-family: var(--font-mono); }
+        .controls { display: flex; flex-direction: column; gap: 1.5rem; margin-top: 2rem; align-items: center; }
+        .playback-controls { display: flex; gap: 0.75rem; align-items: center; }
+        .control-btn {
+            width: 48px; height: 48px;
+            border: none;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--text-secondary);
+            transition: all var(--transition);
+        }
+        .control-btn:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+        .control-btn.primary { width: 64px; height: 64px; background: var(--accent); color: white; border-radius: var(--radius-md); }
+        .control-btn.primary:hover { background: var(--accent-hover); transform: scale(1.05); }
+        .control-btn svg { width: 24px; height: 24px; }
+        .control-btn.primary svg { width: 28px; height: 28px; }
+        .speed-control { display: flex; align-items: center; gap: 1.5rem; padding: 1rem 1.5rem; background: var(--bg-secondary); border-radius: var(--radius-md); }
+        .speed-label { font-size: 0.85rem; color: var(--text-muted); white-space: nowrap; }
+        .speed-slider { width: 200px; height: 4px; -webkit-appearance: none; appearance: none; background: var(--bg-tertiary); border-radius: 2px; outline: none; }
+        .speed-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; background: var(--accent); border-radius: 50%; cursor: pointer; }
+        .speed-slider::-moz-range-thumb { width: 16px; height: 16px; background: var(--accent); border-radius: 50%; cursor: pointer; border: none; }
+        .speed-value { font-family: var(--font-mono); font-size: 0.9rem; font-weight: 500; min-width: 5rem; text-align: right; color: var(--accent); }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            padding: 1rem;
+        }
+        .modal-overlay.open { opacity: 1; visibility: visible; }
+        .modal {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            max-width: 700px;
+            width: 100%;
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transform: scale(0.95);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.open .modal { transform: scale(1); }
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .modal-header h2 { font-size: 1.25rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; }
+        .modal-header h2 svg { width: 24px; height: 24px; color: var(--accent); }
+        .modal-body { padding: 1.5rem; overflow-y: auto; flex: 1; }
+        .modal-footer { padding: 1rem 1.5rem; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 0.75rem; }
+        .benchmark-intro { text-align: center; padding: 2rem 1rem; }
+        .benchmark-intro p { color: var(--text-secondary); margin-bottom: 1.5rem; line-height: 1.6; }
+        .benchmark-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+        .benchmark-stat { background: var(--bg-secondary); padding: 1rem; border-radius: var(--radius-sm); text-align: center; }
+        .benchmark-stat-value { font-size: 1.5rem; font-weight: 600; color: var(--accent); font-family: var(--font-mono); }
+        .benchmark-stat-label { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem; }
+        .benchmark-reading { display: none; }
+        .benchmark-reading.active { display: block; }
+        .benchmark-timer-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .benchmark-timer { 
+            flex: 1;
+            text-align: center; 
+            padding: 1rem; 
+            background: var(--bg-secondary); 
+            border-radius: var(--radius-sm);
+        }
+        .benchmark-timer-value { font-size: 2rem; font-weight: 600; font-family: var(--font-mono); color: var(--accent); }
+        .benchmark-timer-label { font-size: 0.8rem; color: var(--text-muted); }
+        
+        /* Shuffle button - clean design */
+        .benchmark-shuffle-btn {
+            width: 44px;
+            height: 44px;
+            border: 1px solid var(--border);
+            background: var(--bg-primary);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+        .benchmark-shuffle-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--accent-subtle);
+        }
+        .benchmark-shuffle-btn:active {
+            transform: scale(0.95);
+        }
+        .benchmark-shuffle-btn svg { width: 20px; height: 20px; }
+        
+        .benchmark-text {
+            font-family: var(--font-reading);
+            font-size: 1.15rem;
+            line-height: 1.8;
+            color: var(--text-primary);
+            text-align: justify;
+            padding: 1.5rem;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            max-height: 350px;
+            overflow-y: auto;
+        }
+        .benchmark-results { display: none; text-align: center; padding: 2rem 1rem; }
+        .benchmark-results.active { display: block; }
+        .benchmark-result-wpm { font-size: 4rem; font-weight: 600; color: var(--accent); font-family: var(--font-mono); }
+        .benchmark-result-label { font-size: 1rem; color: var(--text-muted); margin-bottom: 2rem; }
+        .benchmark-comparison { display: flex; justify-content: center; gap: 2rem; margin-top: 1.5rem; }
+        .comparison-item { text-align: center; }
+        .comparison-value { font-size: 1.25rem; font-weight: 600; font-family: var(--font-mono); }
+        .comparison-label { font-size: 0.75rem; color: var(--text-muted); }
+
+        /* Settings */
+        .settings-panel {
+            position: fixed;
+            top: 0; right: 0;
+            width: 380px; height: 100vh;
+            background: var(--bg-primary);
+            border-left: 1px solid var(--border);
+            padding: 2rem;
+            transform: translateX(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 200;
+            overflow-y: auto;
+        }
+        .settings-panel.open { transform: translateX(0); }
+        .settings-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); opacity: 0; visibility: hidden; transition: all 0.3s ease; z-index: 199; }
+        .settings-overlay.open { opacity: 1; visibility: visible; }
+        .settings-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+        .settings-header h2 { font-size: 1.25rem; font-weight: 600; }
+        .settings-group { margin-bottom: 2rem; }
+        .settings-group > label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem; }
+        .font-options { display: flex; flex-direction: column; gap: 0.5rem; }
+        .font-option { padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; transition: all var(--transition); display: flex; align-items: center; gap: 0.75rem; }
+        .font-option:hover { border-color: var(--accent); }
+        .font-option.active { border-color: var(--accent); background: var(--accent-subtle); }
+        .font-option input { display: none; }
+        .font-preview { font-size: 1.1rem; }
+        .font-name { font-size: 0.8rem; color: var(--text-muted); }
+        .size-control { display: flex; align-items: center; gap: 1rem; }
+        .size-btn { width: 36px; height: 36px; border: 1px solid var(--border); background: var(--bg-secondary); border-radius: var(--radius-sm); cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-secondary); font-size: 1.25rem; transition: all var(--transition); }
+        .size-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .size-value { font-family: var(--font-mono); font-size: 0.9rem; min-width: 3rem; text-align: center; }
+        
+        /* Theme Selector */
+        .theme-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+        }
+        .theme-option {
+            padding: 0.5rem;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all var(--transition);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+            background: var(--bg-secondary);
+        }
+        .theme-option:hover { border-color: var(--accent); }
+        .theme-option.active { border-color: var(--accent); background: var(--accent-subtle); }
+        .theme-preview {
+            width: 100%;
+            height: 24px;
+            border-radius: 3px;
+            display: flex;
+            overflow: hidden;
+        }
+        .theme-preview span {
+            flex: 1;
+            height: 100%;
+        }
+        .theme-name { font-size: 0.7rem; color: var(--text-muted); text-align: center; }
+        
+        /* Toggle Switch */
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+        }
+        .toggle-label {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+        .toggle-label span { font-size: 0.9rem; }
+        .toggle-label small { font-size: 0.75rem; color: var(--text-muted); }
+        .toggle-switch {
+            position: relative;
+            width: 48px;
+            height: 26px;
+            flex-shrink: 0;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background: var(--bg-tertiary);
+            border-radius: 26px;
+            transition: 0.3s;
+        }
+        .toggle-slider::before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+        .toggle-switch input:checked + .toggle-slider {
+            background: var(--accent);
+        }
+        .toggle-switch input:checked + .toggle-slider::before {
+            transform: translateX(22px);
+        }
+        
+        .shortcuts-hint { padding-top: 1.5rem; border-top: 1px solid var(--border); }
+        .shortcuts-hint h3 { font-size: 0.85rem; font-weight: 500; margin-bottom: 1rem; color: var(--text-muted); }
+        .shortcut { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; font-size: 0.85rem; }
+        .shortcut kbd { padding: 0.25rem 0.5rem; background: var(--bg-tertiary); border-radius: 4px; font-family: var(--font-mono); font-size: 0.75rem; }
+        .loading { display: none; flex-direction: column; align-items: center; gap: 1rem; padding: 2rem; }
+        .loading.active { display: flex; }
+        .spinner { width: 40px; height: 40px; border: 3px solid var(--bg-tertiary); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .error-message { display: none; padding: 1rem; background: #fee; border: 1px solid #fcc; border-radius: var(--radius-sm); color: #c33; margin-top: 1rem; max-width: 480px; text-align: center; }
+        .error-message.active { display: block; }
+        [data-theme="dark"] .error-message,
+        [data-theme="scifi"] .error-message,
+        [data-theme="fantasy"] .error-message,
+        [data-theme="thriller"] .error-message { background: #3a1a1a; border-color: #5a2a2a; color: #f99; }
+        
+        /* Focus Mode Indicator */
+        .focus-indicator {
+            position: fixed;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.5rem 1rem;
+            background: var(--accent);
+            color: white;
+            border-radius: var(--radius-sm);
+            font-size: 0.8rem;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 300;
+        }
+        .focus-indicator.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        @media (max-width: 768px) {
+            .header { padding: 1rem; }
+            .container { padding: 5rem 1rem 2rem; }
+            .features { flex-direction: column; align-items: center; gap: 0.75rem; }
+            .speed-control { flex-direction: column; gap: 1rem; width: 100%; max-width: 300px; }
+            .speed-slider { width: 100%; }
+            .settings-panel { width: 100%; }
+            .book-info { flex-direction: column; text-align: center; }
+            .benchmark-stats { grid-template-columns: 1fr; }
+            .timeline-chapter-title { max-width: 120px; }
+            .theme-options { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">V</div>
+            <span class="logo-text">Velocireader</span>
+        </div>
+        <div class="header-actions">
+            <button class="icon-btn" id="themeToggle" title="Toggle theme">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            </button>
+            <button class="icon-btn" id="settingsToggle" title="Settings">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </button>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="upload-section" id="uploadSection">
+            <div class="upload-header">
+                <h1>Read <span>faster</span>, retain nothing</h1>
+                <p>RSVP (Rapid Serial Visual Presentation) displays words one at a time at your chosen speed, eliminating the need for eye movement and dramatically increasing reading speed.</p>
+            </div>
+            <div class="dropzone" id="dropzone">
+                <div class="dropzone-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                </div>
+                <h3>Drop your book here</h3>
+                <p>EPUB or PDF supported</p>
+                <input type="file" id="fileInput" accept=".epub,.pdf">
+            </div>
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <span>Processing your book...</span>
+            </div>
+            <div class="error-message" id="errorMessage"></div>
+            <div class="features">
+                <div class="feature"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>Adaptive timing</div>
+                <div class="feature"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Chapter navigation</div>
+                <div class="feature"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6v6H9z"/></svg>Bionic reading</div>
+            </div>
+        </section>
+
+        <section class="reader-section" id="readerSection">
+            <div class="book-info">
+                <div class="book-meta">
+                    <span class="book-title-text" id="bookTitle">Book Title</span>
+                    <span class="book-stats" id="bookStats">0 words • 0 chapters</span>
+                </div>
+                <div class="book-actions">
+                    <button class="btn btn-secondary btn-small" id="readerBenchmarkBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+                        Benchmark
+                    </button>
+                    <button class="btn btn-secondary btn-small" id="newBookBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                        New Book
+                    </button>
+                </div>
+            </div>
+            
+            <div class="chapter-timeline" id="chapterTimeline">
+                <div class="timeline-header" id="timelineHeader">
+                    <span class="timeline-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                        <span id="currentChapterName">Chapters</span>
+                    </span>
+                    <svg class="timeline-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6,9 12,15 18,9"/></svg>
+                </div>
+                <div class="timeline-container">
+                    <div class="timeline-track" id="timelineTrack">
+                        <div class="timeline-line"></div>
+                        <div class="timeline-progress" id="timelineProgress"></div>
+                        <div id="chapterList"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="word-display-container">
+                <div class="word-display-wrapper">
+                    <div class="orp-marker" id="orpMarker"></div>
+                    <!-- Single word display (ORP mode) -->
+                    <div class="word-display-single" id="wordDisplaySingle">
+                        <span class="word-before"><span class="word-before-inner" id="wordBefore"></span></span>
+                        <span class="word-orp" id="wordOrp">●</span>
+                        <span class="word-after" id="wordAfter"></span>
+                    </div>
+                    <!-- Grouped word display -->
+                    <div class="word-display-grouped" id="wordDisplayGrouped"></div>
+                    <div class="context-words" id="contextWords"></div>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
+                    <div class="progress-info"><span id="wordCount">0 / 0</span><span id="timeRemaining">0:00</span></div>
+                </div>
+            </div>
+            <div class="controls">
+                <div class="playback-controls">
+                    <button class="control-btn" id="backwardBtn" title="Back 10 words"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="19,20 9,12 19,4"/><line x1="5" y1="19" x2="5" y2="5"/></svg></button>
+                    <button class="control-btn primary" id="playPauseBtn" title="Play/Pause">
+                        <svg viewBox="0 0 24 24" fill="currentColor" id="playIcon"><polygon points="5,3 19,12 5,21"/></svg>
+                        <svg viewBox="0 0 24 24" fill="currentColor" id="pauseIcon" style="display:none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                    </button>
+                    <button class="control-btn" id="forwardBtn" title="Forward 10 words"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5,4 15,12 5,20"/><line x1="19" y1="5" x2="19" y2="19"/></svg></button>
+                    <button class="control-btn" id="resetBtn" title="Reset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1,4 1,10 7,10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>
+                </div>
+                <div class="speed-control">
+                    <span class="speed-label">Speed</span>
+                    <input type="range" class="speed-slider" id="speedSlider" min="100" max="1000" step="25" value="300">
+                    <span class="speed-value" id="speedValue">300 WPM</span>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <div class="focus-indicator" id="focusIndicator">Focus Mode — Move mouse to reveal controls</div>
+    
+    <div class="modal-overlay" id="benchmarkModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>Reading Speed Benchmark</h2>
+                <button class="icon-btn" id="closeBenchmark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+            <div class="modal-body">
+                <div class="benchmark-intro" id="benchmarkIntro">
+                    <p>Measure your natural reading speed using a passage from your book. Read normally, then click "Done" when finished.</p>
+                    <div class="benchmark-stats">
+                        <div class="benchmark-stat"><div class="benchmark-stat-value">200-250</div><div class="benchmark-stat-label">Average</div></div>
+                        <div class="benchmark-stat"><div class="benchmark-stat-value">300-400</div><div class="benchmark-stat-label">Good</div></div>
+                        <div class="benchmark-stat"><div class="benchmark-stat-value">500+</div><div class="benchmark-stat-label">Speed Reader</div></div>
+                    </div>
+                </div>
+                <div class="benchmark-reading" id="benchmarkReading">
+                    <div class="benchmark-timer-row">
+                        <div class="benchmark-timer">
+                            <div class="benchmark-timer-value" id="benchmarkTimer">0:00</div>
+                            <div class="benchmark-timer-label">Time Elapsed</div>
+                        </div>
+                        <button class="benchmark-shuffle-btn" id="benchmarkShuffle" title="Different passage">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M4 20L21 3"/><path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/></svg>
+                        </button>
+                    </div>
+                    <div class="benchmark-text" id="benchmarkText"></div>
+                </div>
+                <div class="benchmark-results" id="benchmarkResults">
+                    <div class="benchmark-result-wpm" id="resultWpm">0</div>
+                    <div class="benchmark-result-label">Words Per Minute</div>
+                    <div class="benchmark-comparison">
+                        <div class="comparison-item"><div class="comparison-value" id="resultTime">0:00</div><div class="comparison-label">Time</div></div>
+                        <div class="comparison-item"><div class="comparison-value" id="resultWords">0</div><div class="comparison-label">Words</div></div>
+                    </div>
+                    <p style="margin-top:1.5rem;color:var(--text-secondary);font-size:0.9rem" id="resultMessage"></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="benchmarkCancel">Cancel</button>
+                <button class="btn btn-primary" id="benchmarkStart">Start Reading</button>
+                <button class="btn btn-primary" id="benchmarkDone" style="display:none">Done Reading</button>
+                <button class="btn btn-primary" id="benchmarkRetry" style="display:none">Try Again</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="settings-overlay" id="settingsOverlay"></div>
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-header"><h2>Settings</h2><button class="icon-btn" id="closeSettings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+        
+        <div class="settings-group">
+            <label>Theme</label>
+            <div class="theme-options" id="themeOptions">
+                <div class="theme-option active" data-theme="light" title="Light">
+                    <div class="theme-preview"><span style="background:#faf9f7"></span><span style="background:#c9553d"></span><span style="background:#1a1a1a"></span></div>
+                    <span class="theme-name">Light</span>
+                </div>
+                <div class="theme-option" data-theme="dark" title="Dark">
+                    <div class="theme-preview"><span style="background:#141414"></span><span style="background:#e07a5f"></span><span style="background:#f0eeeb"></span></div>
+                    <span class="theme-name">Dark</span>
+                </div>
+                <div class="theme-option" data-theme="sepia" title="Sepia">
+                    <div class="theme-preview"><span style="background:#f4ecd8"></span><span style="background:#8b6914"></span><span style="background:#3d3226"></span></div>
+                    <span class="theme-name">Sepia</span>
+                </div>
+                <div class="theme-option" data-theme="literary" title="Literary Fiction">
+                    <div class="theme-preview"><span style="background:#f5f1e8"></span><span style="background:#8b4513"></span><span style="background:#2c2416"></span></div>
+                    <span class="theme-name">Literary</span>
+                </div>
+                <div class="theme-option" data-theme="scifi" title="Sci-Fi">
+                    <div class="theme-preview"><span style="background:#0a0e17"></span><span style="background:#06b6d4"></span><span style="background:#e0f2fe"></span></div>
+                    <span class="theme-name">Sci-Fi</span>
+                </div>
+                <div class="theme-option" data-theme="fantasy" title="Fantasy">
+                    <div class="theme-preview"><span style="background:#1a1520"></span><span style="background:#d4a574"></span><span style="background:#f5e6d3"></span></div>
+                    <span class="theme-name">Fantasy</span>
+                </div>
+                <div class="theme-option" data-theme="romance" title="Romance">
+                    <div class="theme-preview"><span style="background:#fdf2f4"></span><span style="background:#be185d"></span><span style="background:#4a1c2a"></span></div>
+                    <span class="theme-name">Romance</span>
+                </div>
+                <div class="theme-option" data-theme="thriller" title="Thriller">
+                    <div class="theme-preview"><span style="background:#18181b"></span><span style="background:#dc2626"></span><span style="background:#fafafa"></span></div>
+                    <span class="theme-name">Thriller</span>
+                </div>
+                <div class="theme-option" data-theme="nonfiction" title="Non-Fiction">
+                    <div class="theme-preview"><span style="background:#ffffff"></span><span style="background:#0369a1"></span><span style="background:#0f172a"></span></div>
+                    <span class="theme-name">Non-Fiction</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="settings-group">
+            <label>Reading Options</label>
+            <div class="toggle-row">
+                <div class="toggle-label">
+                    <span>Adaptive Timing</span>
+                    <small>Adjust word duration based on complexity</small>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="adaptiveToggle" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="toggle-row">
+                <div class="toggle-label">
+                    <span>Bionic Reading</span>
+                    <small>Bold first letters to guide eye fixation</small>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="bionicToggle">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="toggle-row">
+                <div class="toggle-label">
+                    <span>Phrase Grouping</span>
+                    <small>Show common 2-word phrases together</small>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="groupingToggle">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="toggle-row">
+                <div class="toggle-label">
+                    <span>Focus Mode</span>
+                    <small>Dim UI while reading</small>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="focusToggle">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+        
+        <div class="settings-group">
+            <label>Reading Font</label>
+            <div class="font-options" id="fontOptions">
+                <label class="font-option active" data-font="'Crimson Pro', Georgia, serif"><input type="radio" name="font" checked><span class="font-preview" style="font-family:'Crimson Pro',Georgia,serif">Aa</span><span class="font-name">Crimson Pro</span></label>
+                <label class="font-option" data-font="'Lora', Georgia, serif"><input type="radio" name="font"><span class="font-preview" style="font-family:'Lora',Georgia,serif">Aa</span><span class="font-name">Lora</span></label>
+                <label class="font-option" data-font="'Playfair Display', serif"><input type="radio" name="font"><span class="font-preview" style="font-family:'Playfair Display',serif">Aa</span><span class="font-name">Playfair Display</span></label>
+                <label class="font-option" data-font="'Merriweather', Georgia, serif"><input type="radio" name="font"><span class="font-preview" style="font-family:'Merriweather',Georgia,serif">Aa</span><span class="font-name">Merriweather</span></label>
+                <label class="font-option" data-font="'DM Sans', system-ui, sans-serif"><input type="radio" name="font"><span class="font-preview" style="font-family:'DM Sans',system-ui,sans-serif">Aa</span><span class="font-name">DM Sans</span></label>
+                <label class="font-option" data-font="'Space Mono', monospace"><input type="radio" name="font"><span class="font-preview" style="font-family:'Space Mono',monospace">Aa</span><span class="font-name">Space Mono</span></label>
+            </div>
+        </div>
+        
+        <div class="settings-group">
+            <label>Word Size</label>
+            <div class="size-control"><button class="size-btn" id="decreaseSize">−</button><span class="size-value" id="sizeValue">100%</span><button class="size-btn" id="increaseSize">+</button></div>
+        </div>
+        
+        <div class="shortcuts-hint">
+            <h3>Keyboard Shortcuts</h3>
+            <div class="shortcut"><span>Play/Pause</span><kbd>Space</kbd></div>
+            <div class="shortcut"><span>Back</span><kbd>←</kbd></div>
+            <div class="shortcut"><span>Forward</span><kbd>→</kbd></div>
+            <div class="shortcut"><span>Speed ±</span><kbd>↑↓</kbd></div>
+            <div class="shortcut"><span>Reset</span><kbd>R</kbd></div>
+            <div class="shortcut"><span>Focus Mode</span><kbd>F</kbd></div>
+        </div>
+    </div>
+    
+    <script>
+    (function(){
+        // PDF.js worker - set before any PDF operations
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+
+        // Common word phrases for grouping
+        const COMMON_PHRASES = new Set([
+            'in the', 'of the', 'to the', 'on the', 'at the', 'by the', 'for the',
+            'and the', 'from the', 'with the', 'into the', 'as the', 'is the',
+            'was the', 'are the', 'were the', 'be the', 'been the', 'being the',
+            'it was', 'it is', 'there was', 'there is', 'there are', 'there were',
+            'he was', 'she was', 'he is', 'she is', 'they were', 'they are',
+            'i was', 'i am', 'i have', 'i had', 'i will', 'i would', 'i could',
+            'you are', 'you were', 'you have', 'you had', 'you will', 'you would',
+            'we are', 'we were', 'we have', 'we had', 'we will', 'we would',
+            'do not', 'does not', 'did not', 'will not', 'would not', 'could not',
+            'should not', 'must not', 'has not', 'have not', 'had not', 
+            'is not', 'are not', 'was not', 'were not',
+            'as well', 'as if', 'as though', 'even if', 'even though', 'so that',
+            'such as', 'rather than', 'other than', 'more than', 'less than',
+            'in order', 'out of', 'up to', 'due to', 'next to', 'close to',
+            'a lot', 'a few', 'a little', 'a bit', 'a while', 'a moment',
+            'each other', 'one another', 'no one', 'any one', 'some one',
+            'all of', 'most of', 'some of', 'none of', 'any of', 'many of'
+        ]);
+
+        const HIGH_FREQ = new Set(['the','a','an','is','are','was','were','be','been','being','have','has','had','do','does','did','will','would','could','should','may','might','must','shall','can','need','to','of','in','for','on','with','at','by','from','as','into','through','during','before','after','above','below','between','under','again','then','once','here','there','when','where','why','how','all','each','every','both','few','more','most','other','some','such','no','nor','not','only','own','same','so','than','too','very','just','also','now','and','but','or','yet','if','because','although','though','while','that','which','who','whom','whose','this','these','those','what','i','you','he','she','it','we','they','me','him','her','us','them','my','your','his','its','our','their','am','been','get','got','go','goes','went','come','came','say','said','make','made','know','knew','think','thought','take','took','see','saw','want','look','use','find','give','tell','work','seem','feel','try','leave','call']);
+        
+        function getCognitiveLoad(word, adaptiveEnabled) {
+            if (!adaptiveEnabled) return 1.0;
+            const clean = word.replace(/[^a-zA-Z']/g, '').toLowerCase();
+            if (!clean) return 1.0;
+            let m = 1.0;
+            const len = clean.length;
+            if (len <= 2) m *= 0.65;
+            else if (len <= 3) m *= 0.75;
+            else if (len <= 4) m *= 0.85;
+            else if (len <= 6) m *= 1.0;
+            else if (len <= 8) m *= 1.2;
+            else if (len <= 10) m *= 1.35;
+            else if (len <= 12) m *= 1.5;
+            else m *= 1.7;
+            if (HIGH_FREQ.has(clean)) m *= 0.7;
+            else m *= 1.15;
+            if (/[.!?]$/.test(word)) m *= 2.0;
+            else if (/[;:]$/.test(word)) m *= 1.6;
+            else if (/[,]$/.test(word)) m *= 1.4;
+            if (word[0] && word[0] === word[0].toUpperCase() && /[a-zA-Z]/.test(word[0])) m *= 1.1;
+            if (/\d/.test(word)) m *= 1.5;
+            if (/-/.test(word)) m *= 1.2;
+            return Math.max(0.4, Math.min(2.5, m));
+        }
+        
+        function getORP(word) {
+            const len = word.length;
+            if (len <= 1) return 0;
+            if (len <= 3) return Math.floor(len / 2);
+            if (len <= 5) return 1;
+            if (len <= 9) return 2;
+            if (len <= 13) return 3;
+            return 4;
+        }
+        
+        function getBionicSplit(word) {
+            const letters = word.replace(/[^a-zA-Z]/g, '');
+            const len = letters.length;
+            if (len <= 1) return { boldLen: word.length };
+            if (len <= 3) return { boldLen: 1 };
+            if (len <= 6) return { boldLen: 2 };
+            if (len <= 9) return { boldLen: 3 };
+            return { boldLen: 4 };
+        }
+
+        const state = {
+            words: [],
+            wordData: [],
+            chapters: [],
+            currentIndex: 0,
+            currentChapter: 0,
+            isPlaying: false,
+            timeoutId: null,
+            wpm: 300,
+            wordSize: 100,
+            bookTitle: '',
+            totalDuration: 0,
+            adaptiveTiming: true,
+            bionicReading: false,
+            sentenceGrouping: false,
+            focusMode: false,
+            contextTimeout: null,
+            focusTimeout: null,
+            benchmark: { isRunning: false, startTime: null, timerInterval: null, wordCount: 0, usedPositions: [] }
+        };
+
+        const $ = id => document.getElementById(id);
+        const el = {
+            uploadSection: $('uploadSection'),
+            readerSection: $('readerSection'),
+            dropzone: $('dropzone'),
+            fileInput: $('fileInput'),
+            loading: $('loading'),
+            errorMessage: $('errorMessage'),
+            wordDisplaySingle: $('wordDisplaySingle'),
+            wordDisplayGrouped: $('wordDisplayGrouped'),
+            wordBefore: $('wordBefore'),
+            wordOrp: $('wordOrp'),
+            wordAfter: $('wordAfter'),
+            orpMarker: $('orpMarker'),
+            contextWords: $('contextWords'),
+            playPauseBtn: $('playPauseBtn'),
+            playIcon: $('playIcon'),
+            pauseIcon: $('pauseIcon'),
+            speedSlider: $('speedSlider'),
+            speedValue: $('speedValue'),
+            progressFill: $('progressFill'),
+            progressBar: $('progressBar'),
+            wordCount: $('wordCount'),
+            timeRemaining: $('timeRemaining'),
+            bookTitle: $('bookTitle'),
+            bookStats: $('bookStats'),
+            chapterTimeline: $('chapterTimeline'),
+            timelineHeader: $('timelineHeader'),
+            timelineProgress: $('timelineProgress'),
+            chapterList: $('chapterList'),
+            currentChapterName: $('currentChapterName'),
+            themeToggle: $('themeToggle'),
+            settingsToggle: $('settingsToggle'),
+            settingsPanel: $('settingsPanel'),
+            settingsOverlay: $('settingsOverlay'),
+            closeSettings: $('closeSettings'),
+            fontOptions: $('fontOptions'),
+            themeOptions: $('themeOptions'),
+            sizeValue: $('sizeValue'),
+            adaptiveToggle: $('adaptiveToggle'),
+            bionicToggle: $('bionicToggle'),
+            groupingToggle: $('groupingToggle'),
+            focusToggle: $('focusToggle'),
+            focusIndicator: $('focusIndicator'),
+            benchmarkModal: $('benchmarkModal'),
+            benchmarkIntro: $('benchmarkIntro'),
+            benchmarkReading: $('benchmarkReading'),
+            benchmarkResults: $('benchmarkResults'),
+            benchmarkText: $('benchmarkText'),
+            benchmarkTimer: $('benchmarkTimer'),
+            benchmarkStart: $('benchmarkStart'),
+            benchmarkDone: $('benchmarkDone'),
+            benchmarkCancel: $('benchmarkCancel'),
+            benchmarkRetry: $('benchmarkRetry'),
+            benchmarkShuffle: $('benchmarkShuffle'),
+            resultWpm: $('resultWpm'),
+            resultTime: $('resultTime'),
+            resultWords: $('resultWords'),
+            resultMessage: $('resultMessage')
+        };
+
+        const fmt = n => n.toLocaleString();
+        const fmtTime = s => {
+            const h = Math.floor(s / 3600);
+            const m = Math.floor((s % 3600) / 60);
+            const sec = Math.floor(s % 60);
+            if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+            return `${m}:${String(sec).padStart(2,'0')}`;
+        };
+        const showErr = m => { el.errorMessage.textContent = m; el.errorMessage.classList.add('active'); setTimeout(() => el.errorMessage.classList.remove('active'), 5000); };
+
+        function processWords() {
+            const baseMs = 60000 / state.wpm;
+            state.wordData = [];
+            state.totalDuration = 0;
+            
+            let i = 0;
+            while (i < state.words.length) {
+                const word = state.words[i];
+                
+                // Check for phrase grouping
+                if (state.sentenceGrouping && i < state.words.length - 1) {
+                    const twoWords = (state.words[i] + ' ' + state.words[i + 1]).toLowerCase();
+                    if (COMMON_PHRASES.has(twoWords)) {
+                        const load1 = getCognitiveLoad(state.words[i], state.adaptiveTiming);
+                        const load2 = getCognitiveLoad(state.words[i + 1], state.adaptiveTiming);
+                        const duration = Math.round(baseMs * (load1 + load2) * 0.7);
+                        state.wordData.push({
+                            words: [state.words[i], state.words[i + 1]],
+                            duration,
+                            isGrouped: true,
+                            wordCount: 2
+                        });
+                        state.totalDuration += duration;
+                        i += 2;
+                        continue;
+                    }
+                }
+                
+                // Single word
+                const load = getCognitiveLoad(word, state.adaptiveTiming);
+                const duration = Math.round(baseMs * load);
+                const orpIndex = getORP(word);
+                state.wordData.push({
+                    words: [word],
+                    duration,
+                    orpIndex,
+                    isGrouped: false,
+                    wordCount: 1
+                });
+                state.totalDuration += duration;
+                i++;
+            }
+            
+            // Update chapter durations
+            let wordIdx = 0;
+            let dataIdx = 0;
+            for (const ch of state.chapters) {
+                ch.startDataIndex = dataIdx;
+                let chDur = 0;
+                let chWords = 0;
+                while (dataIdx < state.wordData.length && chWords < ch.wordCount) {
+                    chDur += state.wordData[dataIdx].duration;
+                    chWords += state.wordData[dataIdx].wordCount;
+                    dataIdx++;
+                }
+                ch.duration = chDur;
+                ch.endDataIndex = dataIdx;
+            }
+        }
+        
+        function getWordIndexFromDataIndex(dataIndex) {
+            let wordIdx = 0;
+            for (let i = 0; i < dataIndex && i < state.wordData.length; i++) {
+                wordIdx += state.wordData[i].wordCount;
+            }
+            return wordIdx;
+        }
+        
+        function getElapsedDuration() {
+            let elapsed = 0;
+            for (let i = 0; i < state.currentIndex && i < state.wordData.length; i++) {
+                elapsed += state.wordData[i].duration;
+            }
+            return elapsed;
+        }
+        
+        function updateBookStats() {
+            el.bookStats.textContent = `${fmt(state.words.length)} words • ${state.chapters.length} ch • ${fmtTime(state.totalDuration / 1000)}`;
+        }
+
+        async function parseEPUB(file) {
+            const zip = await JSZip.loadAsync(await file.arrayBuffer());
+            const parser = new DOMParser();
+            const container = await zip.file('META-INF/container.xml')?.async('string');
+            if (!container) throw new Error('Invalid EPUB: Missing container.xml');
+            const cDoc = parser.parseFromString(container, 'application/xml');
+            const opfPath = cDoc.querySelector('rootfile')?.getAttribute('full-path');
+            if (!opfPath) throw new Error('Invalid EPUB: Missing OPF path');
+            const opfDir = opfPath.includes('/') ? opfPath.substring(0, opfPath.lastIndexOf('/') + 1) : '';
+            const opf = await zip.file(opfPath)?.async('string');
+            if (!opf) throw new Error('Invalid EPUB: Missing OPF file');
+            const opfDoc = parser.parseFromString(opf, 'application/xml');
+            state.bookTitle = opfDoc.querySelector('title')?.textContent?.trim() || file.name.replace(/\.epub$/i, '');
+            const manifest = new Map();
+            opfDoc.querySelectorAll('manifest item').forEach(i => manifest.set(i.getAttribute('id'), { href: i.getAttribute('href'), type: i.getAttribute('media-type') || '' }));
+            let toc = [];
+            const ncx = Array.from(manifest.values()).find(i => i.type.includes('ncx'));
+            if (ncx) {
+                const f = zip.file(opfDir + ncx.href) || zip.file(ncx.href);
+                if (f) {
+                    const x = parser.parseFromString(await f.async('string'), 'application/xml');
+                    x.querySelectorAll('navPoint').forEach(n => {
+                        const l = n.querySelector('navLabel text'), c = n.querySelector('content');
+                        if (l && c) toc.push({ title: l.textContent.trim(), href: c.getAttribute('src').split('#')[0] });
+                    });
+                }
+            }
+            state.chapters = [];
+            state.words = [];
+            let idx = 0;
+            for (const idref of Array.from(opfDoc.querySelectorAll('spine itemref')).map(e => e.getAttribute('idref'))) {
+                const item = manifest.get(idref);
+                if (!item) continue;
+                if (!item.type.includes('html') && !item.type.includes('xml') && !/\.(x?html?|xml)$/i.test(item.href)) continue;
+                let f = zip.file(opfDir + item.href) || zip.file(item.href) || zip.file(decodeURIComponent(opfDir + item.href)) || zip.file(decodeURIComponent(item.href));
+                if (!f) continue;
+                try {
+                    const html = await f.async('string');
+                    const doc = parser.parseFromString(html, 'text/html');
+                    doc.querySelectorAll('script,style,nav,head,[hidden]').forEach(e => e.remove());
+                    const txt = doc.body?.textContent || '';
+                    const words = txt.replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim().split(/\s+/).filter(w => w);
+                    if (words.length) {
+                        const te = toc.find(t => item.href.includes(t.href) || t.href.includes(item.href));
+                        state.chapters.push({ title: te ? te.title : `Section ${state.chapters.length + 1}`, startIndex: idx, wordCount: words.length });
+                        state.words.push(...words);
+                        idx += words.length;
+                    }
+                } catch (e) { console.warn('Error parsing chapter:', e); }
+            }
+            if (!state.words.length) {
+                for (const [p, f] of Object.entries(zip.files)) {
+                    if (f.dir || !/\.(x?html?|htm)$/i.test(p)) continue;
+                    try {
+                        const h = await f.async('string');
+                        const d = parser.parseFromString(h, 'text/html');
+                        d.querySelectorAll('script,style,nav,head').forEach(e => e.remove());
+                        state.words.push(...(d.body?.textContent || '').replace(/\s+/g, ' ').trim().split(/\s+/).filter(w => w));
+                    } catch (e) {}
+                }
+                if (state.words.length) state.chapters.push({ title: 'Full Text', startIndex: 0, wordCount: state.words.length });
+            }
+            if (!state.words.length) throw new Error('No text found in EPUB');
+            processWords();
+            return true;
+        }
+
+        async function parsePDF(file) {
+            if (typeof pdfjsLib === 'undefined') {
+                throw new Error('PDF.js library not loaded. Please refresh the page.');
+            }
+            
+            let arrayBuffer;
+            try {
+                arrayBuffer = await file.arrayBuffer();
+            } catch (e) {
+                throw new Error('Failed to read PDF file');
+            }
+            
+            let pdf;
+            try {
+                pdf = await pdfjsLib.getDocument({ 
+                    data: arrayBuffer,
+                    useWorkerFetch: false,
+                    isEvalSupported: false,
+                    useSystemFonts: true
+                }).promise;
+            } catch (e) {
+                console.error('PDF loading error:', e);
+                throw new Error('Failed to parse PDF. The file may be corrupted or password-protected.');
+            }
+            
+            state.bookTitle = file.name.replace(/\.pdf$/i, '');
+            state.words = [];
+            state.chapters = [];
+            
+            const totalPages = pdf.numPages;
+            if (totalPages === 0) throw new Error('PDF has no pages');
+            
+            const chapterSize = Math.max(1, Math.ceil(totalPages / 10));
+            let currentChapterStartIndex = 0;
+            
+            for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+                try {
+                    const page = await pdf.getPage(pageNum);
+                    const textContent = await page.getTextContent();
+                    const pageText = textContent.items.map(item => item.str).join(' ').replace(/\s+/g, ' ').trim();
+                    const words = pageText.split(/\s+/).filter(w => w && w.length > 0);
+                    
+                    if ((pageNum - 1) % chapterSize === 0) {
+                        if (state.chapters.length > 0) {
+                            state.chapters[state.chapters.length - 1].wordCount = state.words.length - currentChapterStartIndex;
+                        }
+                        currentChapterStartIndex = state.words.length;
+                        state.chapters.push({
+                            title: `Pages ${pageNum}-${Math.min(pageNum + chapterSize - 1, totalPages)}`,
+                            startIndex: currentChapterStartIndex,
+                            wordCount: 0
+                        });
+                    }
+                    
+                    if (words.length) state.words.push(...words);
+                } catch (e) {
+                    console.warn(`Error on page ${pageNum}:`, e);
+                }
+            }
+            
+            // Finalize last chapter
+            if (state.chapters.length > 0) {
+                state.chapters[state.chapters.length - 1].wordCount = state.words.length - currentChapterStartIndex;
+            }
+            
+            if (!state.words.length) throw new Error('No readable text found in PDF');
+            if (!state.chapters.length) {
+                state.chapters.push({ title: 'Full Text', startIndex: 0, wordCount: state.words.length });
+            }
+            
+            processWords();
+            return true;
+        }
+
+        function renderTimeline() {
+            let html = '';
+            for (let i = 0; i < state.chapters.length; i++) {
+                const ch = state.chapters[i];
+                const wordIdx = getWordIndexFromDataIndex(state.currentIndex);
+                const isActive = wordIdx >= ch.startIndex && wordIdx < ch.startIndex + ch.wordCount;
+                const isCompleted = wordIdx >= ch.startIndex + ch.wordCount;
+                html += `<div class="timeline-item ${isActive ? 'active' : ''} ${isCompleted ? 'completed' : ''}" data-i="${i}"><div class="timeline-dot"></div><div class="timeline-content"><span class="timeline-chapter-title">${ch.title}</span><div class="timeline-meta"><span class="timeline-duration">${fmtTime(ch.duration / 1000)}</span><span>${fmt(ch.wordCount)} w</span></div></div></div>`;
+            }
+            el.chapterList.innerHTML = html;
+            updateTimelineProgress();
+        }
+
+        function updateTimelineProgress() {
+            let h = 0;
+            const items = el.chapterList.querySelectorAll('.timeline-item');
+            const wordIdx = getWordIndexFromDataIndex(state.currentIndex);
+            
+            for (let i = 0; i < state.chapters.length; i++) {
+                const ch = state.chapters[i];
+                if (wordIdx >= ch.startIndex + ch.wordCount) {
+                    if (items[i]) h += items[i].offsetHeight + 4;
+                } else if (wordIdx >= ch.startIndex) {
+                    const p = (wordIdx - ch.startIndex) / ch.wordCount;
+                    if (items[i]) h += items[i].offsetHeight * Math.min(1, Math.max(0, p));
+                    break;
+                } else {
+                    break;
+                }
+            }
+            el.timelineProgress.style.height = h + 'px';
+        }
+
+        function updateChapterName() {
+            const wordIdx = getWordIndexFromDataIndex(state.currentIndex);
+            for (let i = state.chapters.length - 1; i >= 0; i--) {
+                if (wordIdx >= state.chapters[i].startIndex) {
+                    state.currentChapter = i;
+                    break;
+                }
+            }
+            el.currentChapterName.textContent = state.chapters[state.currentChapter]?.title || 'Chapters';
+            el.chapterList.querySelectorAll('.timeline-item').forEach((e, i) => {
+                const ch = state.chapters[i];
+                e.classList.toggle('active', wordIdx >= ch.startIndex && wordIdx < ch.startIndex + ch.wordCount);
+                e.classList.toggle('completed', wordIdx >= ch.startIndex + ch.wordCount);
+            });
+            updateTimelineProgress();
+        }
+
+        function goToChapter(i) {
+            if (i < 0 || i >= state.chapters.length) return;
+            const w = state.isPlaying;
+            pause();
+            
+            // Find the data index for this chapter's start
+            const targetWordIdx = state.chapters[i].startIndex;
+            let wordCount = 0;
+            state.currentIndex = 0;
+            for (let j = 0; j < state.wordData.length; j++) {
+                if (wordCount >= targetWordIdx) {
+                    state.currentIndex = j;
+                    break;
+                }
+                wordCount += state.wordData[j].wordCount;
+            }
+            
+            updateDisplay();
+            showContext();
+            renderTimeline();
+            el.chapterTimeline.classList.remove('open');
+            if (w) play();
+        }
+
+        function displayWord(data) {
+            if (data.isGrouped) {
+                // Show grouped display, hide single
+                el.wordDisplaySingle.classList.add('hidden');
+                el.wordDisplayGrouped.classList.add('visible');
+                el.orpMarker.classList.add('hidden');
+                
+                let html = '';
+                for (const word of data.words) {
+                    if (state.bionicReading) {
+                        const { boldLen } = getBionicSplit(word);
+                        html += `<span class="grouped-word"><span class="bionic-bold">${word.substring(0, boldLen)}</span><span class="bionic-normal">${word.substring(boldLen)}</span></span>`;
+                    } else {
+                        html += `<span class="grouped-word">${word}</span>`;
+                    }
+                }
+                el.wordDisplayGrouped.innerHTML = html;
+            } else {
+                // Show single display, hide grouped
+                el.wordDisplaySingle.classList.remove('hidden');
+                el.wordDisplayGrouped.classList.remove('visible');
+                el.orpMarker.classList.remove('hidden');
+                
+                const word = data.words[0];
+                const orpIndex = data.orpIndex !== undefined ? data.orpIndex : getORP(word);
+                
+                if (state.bionicReading) {
+                    const { boldLen } = getBionicSplit(word);
+                    
+                    if (orpIndex < boldLen) {
+                        el.wordBefore.innerHTML = `<span class="bionic-bold">${word.substring(0, orpIndex)}</span>`;
+                        el.wordOrp.innerHTML = `<span class="bionic-bold">${word[orpIndex] || ''}</span>`;
+                        const afterBold = word.substring(orpIndex + 1, boldLen);
+                        const afterNormal = word.substring(boldLen);
+                        el.wordAfter.innerHTML = `<span class="bionic-bold">${afterBold}</span><span class="bionic-normal">${afterNormal}</span>`;
+                    } else {
+                        el.wordBefore.innerHTML = `<span class="bionic-bold">${word.substring(0, boldLen)}</span><span class="bionic-normal">${word.substring(boldLen, orpIndex)}</span>`;
+                        el.wordOrp.innerHTML = `<span class="bionic-normal">${word[orpIndex] || ''}</span>`;
+                        el.wordAfter.innerHTML = `<span class="bionic-normal">${word.substring(orpIndex + 1)}</span>`;
+                    }
+                } else {
+                    el.wordBefore.textContent = word.substring(0, orpIndex);
+                    el.wordOrp.textContent = word[orpIndex] || '';
+                    el.wordAfter.textContent = word.substring(orpIndex + 1);
+                }
+            }
+        }
+        
+        function showContext() {
+            if (state.contextTimeout) clearTimeout(state.contextTimeout);
+            
+            const wordIdx = getWordIndexFromDataIndex(state.currentIndex);
+            const start = Math.max(0, wordIdx - 8);
+            const end = Math.min(state.words.length, wordIdx + 9);
+            const words = [];
+            
+            for (let i = start; i < end; i++) {
+                if (i === wordIdx) {
+                    words.push(`<span class="ctx-current">${state.words[i]}</span>`);
+                } else {
+                    words.push(state.words[i]);
+                }
+            }
+            
+            el.contextWords.innerHTML = words.join(' ');
+            el.contextWords.classList.add('visible');
+            
+            state.contextTimeout = setTimeout(() => {
+                el.contextWords.classList.remove('visible');
+            }, 2000);
+        }
+        
+        function hideContext() {
+            if (state.contextTimeout) clearTimeout(state.contextTimeout);
+            el.contextWords.classList.remove('visible');
+        }
+
+        function updateDisplay() {
+            if (!state.wordData.length) return;
+            const i = Math.max(0, Math.min(state.currentIndex, state.wordData.length - 1));
+            displayWord(state.wordData[i]);
+            
+            const elapsed = getElapsedDuration();
+            const pct = state.totalDuration > 0 ? (elapsed / state.totalDuration) * 100 : 0;
+            el.progressFill.style.width = pct + '%';
+            
+            const wordIdx = getWordIndexFromDataIndex(i);
+            el.wordCount.textContent = `${fmt(wordIdx + 1)} / ${fmt(state.words.length)}`;
+            el.timeRemaining.textContent = fmtTime((state.totalDuration - elapsed) / 1000);
+            updateChapterName();
+        }
+
+        function scheduleNext() {
+            if (!state.isPlaying || state.currentIndex >= state.wordData.length - 1) {
+                if (state.currentIndex >= state.wordData.length - 1) pause();
+                return;
+            }
+            const cur = state.wordData[state.currentIndex];
+            state.timeoutId = setTimeout(() => {
+                state.currentIndex++;
+                updateDisplay();
+                scheduleNext();
+            }, cur.duration);
+        }
+
+        function play() {
+            if (!state.wordData.length || state.isPlaying) return;
+            state.isPlaying = true;
+            el.playIcon.style.display = 'none';
+            el.pauseIcon.style.display = 'block';
+            hideContext();
+            
+            if (state.focusMode) {
+                document.body.classList.add('focus-active');
+                showFocusIndicator();
+            }
+            
+            updateDisplay();
+            scheduleNext();
+        }
+
+        function pause() {
+            if (state.timeoutId) { clearTimeout(state.timeoutId); state.timeoutId = null; }
+            state.isPlaying = false;
+            el.playIcon.style.display = 'block';
+            el.pauseIcon.style.display = 'none';
+            document.body.classList.remove('focus-active');
+        }
+
+        function toggle() { state.wordData.length && (state.isPlaying ? pause() : play()); }
+
+        function skip(n) {
+            const w = state.isPlaying;
+            pause();
+            state.currentIndex = Math.max(0, Math.min(state.wordData.length - 1, state.currentIndex + n));
+            updateDisplay();
+            showContext();
+            if (w) play();
+        }
+
+        function reset() { 
+            pause(); 
+            state.currentIndex = 0; 
+            updateDisplay(); 
+            showContext(); 
+        }
+
+        function setSpeed(v) {
+            state.wpm = +v;
+            el.speedValue.textContent = state.wpm + ' WPM';
+            processWords();
+            updateBookStats();
+            renderTimeline();
+            updateDisplay();
+            if (state.isPlaying) { pause(); play(); }
+        }
+        
+        function setAdaptiveTiming(enabled) {
+            state.adaptiveTiming = enabled;
+            processWords();
+            updateBookStats();
+            renderTimeline();
+            updateDisplay();
+            if (state.isPlaying) { pause(); play(); }
+        }
+        
+        function setBionicReading(enabled) {
+            state.bionicReading = enabled;
+            if (state.wordData.length) updateDisplay();
+        }
+        
+        function setSentenceGrouping(enabled) {
+            state.sentenceGrouping = enabled;
+            if (state.words.length) {
+                // Get current word position
+                const oldWordIdx = getWordIndexFromDataIndex(state.currentIndex);
+                processWords();
+                // Find new data index for approximately the same position
+                let wordCount = 0;
+                state.currentIndex = 0;
+                for (let i = 0; i < state.wordData.length; i++) {
+                    if (wordCount >= oldWordIdx) {
+                        state.currentIndex = i;
+                        break;
+                    }
+                    wordCount += state.wordData[i].wordCount;
+                    state.currentIndex = i;
+                }
+                updateBookStats();
+                renderTimeline();
+                updateDisplay();
+            }
+            if (state.isPlaying) { pause(); play(); }
+        }
+        
+        function setFocusMode(enabled) {
+            state.focusMode = enabled;
+            if (!enabled) {
+                document.body.classList.remove('focus-active');
+                document.body.classList.remove('focus-reveal');
+            }
+        }
+        
+        function showFocusIndicator() {
+            el.focusIndicator.classList.add('visible');
+            setTimeout(() => {
+                el.focusIndicator.classList.remove('visible');
+            }, 2000);
+        }
+
+        function seek(e) {
+            if (!state.wordData.length) return;
+            const r = el.progressBar.getBoundingClientRect();
+            const p = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+            const w = state.isPlaying;
+            pause();
+            const target = p * state.totalDuration;
+            let acc = 0;
+            state.currentIndex = 0;
+            for (let i = 0; i < state.wordData.length; i++) {
+                if (acc + state.wordData[i].duration > target) { state.currentIndex = i; break; }
+                acc += state.wordData[i].duration;
+                state.currentIndex = i;
+            }
+            updateDisplay();
+            showContext();
+            if (w) play();
+        }
+
+        async function handleFile(file) {
+            if (!file) { showErr('Select a valid file'); return; }
+            
+            const name = file.name.toLowerCase();
+            const isEpub = name.endsWith('.epub');
+            const isPdf = name.endsWith('.pdf');
+            
+            if (!isEpub && !isPdf) {
+                showErr('Please select an EPUB or PDF file');
+                return;
+            }
+            
+            el.loading.classList.add('active');
+            el.dropzone.style.display = 'none';
+            
+            try {
+                if (isEpub) {
+                    await parseEPUB(file);
+                } else {
+                    await parsePDF(file);
+                }
+                
+                el.bookTitle.textContent = state.bookTitle;
+                updateBookStats();
+                el.uploadSection.classList.add('hidden');
+                el.readerSection.classList.add('active');
+                state.currentIndex = 0;
+                state.currentChapter = 0;
+                renderTimeline();
+                updateDisplay();
+            } catch (e) {
+                console.error('File processing error:', e);
+                showErr(e.message || 'Failed to process file');
+                el.dropzone.style.display = 'block';
+            }
+            el.loading.classList.remove('active');
+        }
+
+        function newBook() {
+            pause();
+            state.words = []; state.wordData = []; state.chapters = [];
+            state.currentIndex = 0; state.totalDuration = 0;
+            state.benchmark.usedPositions = [];
+            el.uploadSection.classList.remove('hidden');
+            el.readerSection.classList.remove('active');
+            el.dropzone.style.display = 'block';
+            el.fileInput.value = '';
+        }
+        
+        function getRandomBenchmarkPosition() {
+            if (state.words.length < 400) return null;
+            
+            const segmentCount = Math.min(10, Math.floor(state.words.length / 400));
+            const segmentSize = Math.floor(state.words.length / segmentCount);
+            const availableSegments = [];
+            
+            for (let i = 0; i < segmentCount; i++) {
+                if (!state.benchmark.usedPositions.includes(i)) {
+                    availableSegments.push(i);
+                }
+            }
+            
+            if (availableSegments.length === 0) {
+                state.benchmark.usedPositions = [];
+                for (let i = 0; i < segmentCount; i++) availableSegments.push(i);
+            }
+            
+            const segmentIdx = availableSegments[Math.floor(Math.random() * availableSegments.length)];
+            state.benchmark.usedPositions.push(segmentIdx);
+            
+            const segmentStart = segmentIdx * segmentSize;
+            const randomOffset = Math.floor(Math.random() * Math.min(100, segmentSize - 350));
+            let startIdx = segmentStart + randomOffset;
+            
+            // Find sentence start
+            for (let i = startIdx; i < startIdx + 50 && i < state.words.length; i++) {
+                const prevWord = state.words[i - 1] || '';
+                if (/[.!?]$/.test(prevWord)) {
+                    startIdx = i;
+                    break;
+                }
+            }
+            
+            return Math.max(0, startIdx);
+        }
+        
+        function getBenchmarkText() {
+            const startIdx = getRandomBenchmarkPosition();
+            if (startIdx === null) return null;
+            
+            const targetWords = 250 + Math.floor(Math.random() * 100);
+            let endIdx = Math.min(startIdx + targetWords, state.words.length);
+            
+            // Try to end at sentence boundary
+            for (let i = endIdx; i < endIdx + 50 && i < state.words.length; i++) {
+                if (/[.!?]$/.test(state.words[i])) {
+                    endIdx = i + 1;
+                    break;
+                }
+            }
+            
+            return state.words.slice(startIdx, endIdx).join(' ');
+        }
+
+        function openBenchmark() {
+            el.benchmarkModal.classList.add('open');
+            resetBenchmark();
+        }
+        
+        function closeBenchmark() {
+            el.benchmarkModal.classList.remove('open');
+            stopTimer();
+        }
+        
+        function resetBenchmark() {
+            el.benchmarkIntro.style.display = 'block';
+            el.benchmarkReading.classList.remove('active');
+            el.benchmarkResults.classList.remove('active');
+            el.benchmarkStart.style.display = 'inline-flex';
+            el.benchmarkDone.style.display = 'none';
+            el.benchmarkRetry.style.display = 'none';
+            el.benchmarkCancel.textContent = 'Cancel';
+            stopTimer();
+        }
+        
+        function shuffleBenchmarkText() {
+            stopTimer();
+            const txt = getBenchmarkText();
+            if (!txt) {
+                showErr('Could not get different passage');
+                return;
+            }
+            el.benchmarkText.textContent = txt;
+            state.benchmark.wordCount = txt.split(/\s+/).length;
+            state.benchmark.startTime = Date.now();
+            el.benchmarkTimer.textContent = '0:00';
+            state.benchmark.timerInterval = setInterval(() => {
+                el.benchmarkTimer.textContent = fmtTime((Date.now() - state.benchmark.startTime) / 1000);
+            }, 100);
+            state.benchmark.isRunning = true;
+        }
+        
+        function startBenchmark() {
+            const txt = getBenchmarkText();
+            if (!txt) {
+                showErr('Book too short for benchmark');
+                closeBenchmark();
+                return;
+            }
+            
+            el.benchmarkText.textContent = txt;
+            state.benchmark.wordCount = txt.split(/\s+/).length;
+            el.benchmarkIntro.style.display = 'none';
+            el.benchmarkReading.classList.add('active');
+            el.benchmarkStart.style.display = 'none';
+            el.benchmarkDone.style.display = 'inline-flex';
+            state.benchmark.startTime = Date.now();
+            state.benchmark.isRunning = true;
+            el.benchmarkTimer.textContent = '0:00';
+            state.benchmark.timerInterval = setInterval(() => {
+                el.benchmarkTimer.textContent = fmtTime((Date.now() - state.benchmark.startTime) / 1000);
+            }, 100);
+        }
+        
+        function stopTimer() {
+            if (state.benchmark.timerInterval) {
+                clearInterval(state.benchmark.timerInterval);
+                state.benchmark.timerInterval = null;
+            }
+            state.benchmark.isRunning = false;
+        }
+        
+        function finishBenchmark() {
+            stopTimer();
+            const s = (Date.now() - state.benchmark.startTime) / 1000;
+            const wpm = Math.round(state.benchmark.wordCount / s * 60);
+            el.resultWpm.textContent = wpm;
+            el.resultTime.textContent = fmtTime(s);
+            el.resultWords.textContent = state.benchmark.wordCount;
+            el.resultMessage.textContent = wpm < 200 ? 'Try RSVP at 300+ WPM to read faster!' : wpm < 300 ? 'Good pace! Try RSVP at 400 WPM.' : wpm < 400 ? 'Great speed! Challenge yourself at 500+ WPM.' : 'Impressive! You\'re a speed reader.';
+            el.benchmarkReading.classList.remove('active');
+            el.benchmarkResults.classList.add('active');
+            el.benchmarkDone.style.display = 'none';
+            el.benchmarkRetry.style.display = 'inline-flex';
+            el.benchmarkCancel.textContent = 'Close';
+        }
+
+        function setTheme(theme) {
+            document.body.setAttribute('data-theme', theme);
+            localStorage.setItem('vr-theme', theme);
+            document.querySelectorAll('.theme-option').forEach(o => {
+                o.classList.toggle('active', o.dataset.theme === theme);
+            });
+        }
+
+        function toggleTheme() {
+            const current = document.body.getAttribute('data-theme') || 'light';
+            const themes = ['light', 'dark', 'sepia'];
+            const idx = themes.indexOf(current);
+            const next = themes[(idx + 1) % themes.length];
+            setTheme(next);
+        }
+        
+        function openSettings() {
+            el.settingsPanel.classList.add('open');
+            el.settingsOverlay.classList.add('open');
+        }
+        
+        function closeSettingsPanel() {
+            el.settingsPanel.classList.remove('open');
+            el.settingsOverlay.classList.remove('open');
+        }
+        
+        function setFont(f) {
+            el.wordDisplaySingle.style.fontFamily = f;
+            el.wordDisplayGrouped.style.fontFamily = f;
+            document.querySelectorAll('.font-option').forEach(o => o.classList.toggle('active', o.dataset.font === f));
+        }
+        
+        function adjustSize(d) {
+            state.wordSize = Math.max(50, Math.min(200, state.wordSize + d));
+            el.sizeValue.textContent = state.wordSize + '%';
+            const size = `calc(clamp(2.5rem,8vw,5rem)*${state.wordSize / 100})`;
+            el.wordDisplaySingle.style.fontSize = size;
+            el.wordDisplayGrouped.style.fontSize = size;
+        }
+        
+        // Focus mode mouse movement detection
+        let focusMouseTimeout;
+        document.addEventListener('mousemove', () => {
+            if (state.focusMode && state.isPlaying) {
+                document.body.classList.add('focus-reveal');
+                clearTimeout(focusMouseTimeout);
+                focusMouseTimeout = setTimeout(() => {
+                    document.body.classList.remove('focus-reveal');
+                }, 1500);
+            }
+        });
+
+        // Event listeners
+        el.fileInput.addEventListener('change', e => e.target.files?.[0] && handleFile(e.target.files[0]));
+        el.dropzone.addEventListener('dragover', e => { e.preventDefault(); el.dropzone.classList.add('dragover'); });
+        el.dropzone.addEventListener('dragleave', () => el.dropzone.classList.remove('dragover'));
+        el.dropzone.addEventListener('drop', e => { e.preventDefault(); el.dropzone.classList.remove('dragover'); e.dataTransfer.files?.[0] && handleFile(e.dataTransfer.files[0]); });
+        el.playPauseBtn.addEventListener('click', toggle);
+        $('backwardBtn').addEventListener('click', () => skip(-10));
+        $('forwardBtn').addEventListener('click', () => skip(10));
+        $('resetBtn').addEventListener('click', reset);
+        $('newBookBtn').addEventListener('click', newBook);
+        el.speedSlider.addEventListener('input', e => setSpeed(e.target.value));
+        el.progressBar.addEventListener('click', seek);
+        el.timelineHeader.addEventListener('click', () => el.chapterTimeline.classList.toggle('open'));
+        el.chapterList.addEventListener('click', e => { const i = e.target.closest('.timeline-item'); if (i) goToChapter(+i.dataset.i); });
+        el.themeToggle.addEventListener('click', toggleTheme);
+        el.settingsToggle.addEventListener('click', openSettings);
+        el.closeSettings.addEventListener('click', closeSettingsPanel);
+        el.settingsOverlay.addEventListener('click', closeSettingsPanel);
+        el.fontOptions.addEventListener('click', e => { const o = e.target.closest('.font-option'); if (o?.dataset.font) setFont(o.dataset.font); });
+        el.themeOptions.addEventListener('click', e => { const o = e.target.closest('.theme-option'); if (o?.dataset.theme) setTheme(o.dataset.theme); });
+        $('decreaseSize').addEventListener('click', () => adjustSize(-10));
+        $('increaseSize').addEventListener('click', () => adjustSize(10));
+        el.adaptiveToggle.addEventListener('change', e => setAdaptiveTiming(e.target.checked));
+        el.bionicToggle.addEventListener('change', e => setBionicReading(e.target.checked));
+        el.groupingToggle.addEventListener('change', e => setSentenceGrouping(e.target.checked));
+        el.focusToggle.addEventListener('change', e => setFocusMode(e.target.checked));
+        $('readerBenchmarkBtn').addEventListener('click', openBenchmark);
+        $('closeBenchmark').addEventListener('click', closeBenchmark);
+        el.benchmarkCancel.addEventListener('click', closeBenchmark);
+        el.benchmarkStart.addEventListener('click', startBenchmark);
+        el.benchmarkDone.addEventListener('click', finishBenchmark);
+        el.benchmarkRetry.addEventListener('click', resetBenchmark);
+        el.benchmarkShuffle.addEventListener('click', shuffleBenchmarkText);
+        
+        document.addEventListener('keydown', e => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || el.benchmarkModal.classList.contains('open')) return;
+            switch (e.code) {
+                case 'Space': e.preventDefault(); toggle(); break;
+                case 'ArrowLeft': e.preventDefault(); skip(-10); break;
+                case 'ArrowRight': e.preventDefault(); skip(10); break;
+                case 'ArrowUp': e.preventDefault(); el.speedSlider.value = Math.min(1000, state.wpm + 25); setSpeed(el.speedSlider.value); break;
+                case 'ArrowDown': e.preventDefault(); el.speedSlider.value = Math.max(100, state.wpm - 25); setSpeed(el.speedSlider.value); break;
+                case 'KeyR': if (!e.ctrlKey && !e.metaKey) { e.preventDefault(); reset(); } break;
+                case 'KeyF': if (!e.ctrlKey && !e.metaKey) { 
+                    e.preventDefault(); 
+                    el.focusToggle.checked = !el.focusToggle.checked;
+                    setFocusMode(el.focusToggle.checked);
+                } break;
+            }
+        });
+        
+        // Initialize theme
+        const t = localStorage.getItem('vr-theme');
+        if (t) {
+            setTheme(t);
+        } else if (window.matchMedia?.('(prefers-color-scheme:dark)').matches) {
+            setTheme('dark');
+        }
+    })();
+    </script>
+</body>
+</html>
